@@ -2,7 +2,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { chapters } from '@/data/chapters'
-import { questionBank } from '@/data/questionBank'
+import { questionsOf } from '@/data/bank'
 import { getProgress, deriveSectionState } from '@/db/db'
 
 const router = useRouter()
@@ -36,8 +36,10 @@ function toggleChapter(id: string) {
 }
 
 function countOf(chapterId: string, sectionId: string): number {
-  const prefix = `${chapterId}-${sectionId}-`
-  return questionBank.filter((q) => q.id.startsWith(prefix)).length
+  const ch = chapters.find((c) => c.id === chapterId)
+  const sec = ch?.sections.find((s) => s.id === sectionId)
+  if (!ch || !sec) return 0
+  return questionsOf(ch.title, sec.title).length
 }
 
 function progressOf(chapterId: string, sectionId: string) {

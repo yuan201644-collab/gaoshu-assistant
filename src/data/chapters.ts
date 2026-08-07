@@ -20,9 +20,13 @@ export const chapters: ChapterInfo[] = [
     title: '第一章 函数、极限、连续',
     sections: [
       { id: 's1', title: '1.1 函数' },
-      { id: 's2', title: '1.2 极限的运算与判定' },
+      { id: 's2', title: '1.2 极限的概念' },
       { id: 's3', title: '1.3 无穷小与无穷大' },
-      { id: 's4', title: '1.4 函数的连续性与间断点' },
+      { id: 's4', title: '1.4 极限运算法则' },
+      { id: 's5', title: '1.5 极限存在准则·两个重要极限' },
+      { id: 's6', title: '1.6 无穷小的比较' },
+      { id: 's7', title: '1.7 函数的连续性与间断点' },
+      { id: 's8', title: '1.8 闭区间上连续函数的性质' },
     ],
   },
 ]

@@ -42,7 +42,7 @@ describe('PracticeView — c1-s1 选择题', () => {
   it('点击正确选项即提交判分，解析展开', async () => {
     const wrapper = mount(PracticeView)
     await flushPromises()
-    expect(wrapper.text()).toContain('第 1 / 3 题')
+    expect(wrapper.text()).toContain('第 1 / 4 题')
 
     const options = wrapper.findAll('.option-item')
     expect(options).toHaveLength(4)
@@ -99,7 +99,7 @@ describe('PracticeView — c1-s1 填空题', () => {
 
     await btnByText(wrapper, '下一题').trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('第 2 / 3 题')
+    expect(wrapper.text()).toContain('第 2 / 4 题')
 
     await wrapper.find('.fill-input').setValue('$$\\frac{1}{\\sqrt{x}}$$')
     await wrapper.find('.fill-area .btn-primary').trigger('click')
@@ -118,7 +118,7 @@ describe('PracticeView — c1-s1 解答题自评', () => {
     await flushPromises()
     await next.trigger('click')
     await flushPromises()
-    expect(wrapper.text()).toContain('第 3 / 3 题')
+    expect(wrapper.text()).toContain('第 3 / 4 题')
   }
 
   it('查看答案展开解析，未自评前不写 study_record', async () => {
@@ -200,6 +200,9 @@ describe('PracticeView — 导航与收藏', () => {
     await flushPromises()
     await next.trigger('click')
     await flushPromises()
+    await next.trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('第 4 / 4 题')
 
     const findComplete = () =>
       wrapper.findAll('.practice-bottom button').find((b) => b.text() === '完成')!
@@ -209,9 +212,7 @@ describe('PracticeView — 导航与收藏', () => {
     await complete.trigger('click')
     expect(routerMock.push).not.toHaveBeenCalled()
 
-    await wrapper.find('.answer-area .btn-primary').trigger('click') // 查看答案
-    await flushPromises()
-    await wrapper.find('.self-assess .btn-success').trigger('click') // 自评答对
+    await wrapper.find('.self-assess .btn-success').trigger('click') // 题图题自评答对
     await flushPromises()
 
     const complete2 = findComplete()

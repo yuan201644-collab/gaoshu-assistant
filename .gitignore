@@ -13,3 +13,9 @@ ios
 orchestrator.sh
 orchestrator_auto.sh
 .claude/
+
+# 开发端 PDF→题库 流水线（本地工具与产物，不入 git）
+tools/pdf_pipeline/.env
+tools/pdf_pipeline/input/
+tools/pdf_pipeline/mineru_out/
+tools/pdf_pipeline/app_import/

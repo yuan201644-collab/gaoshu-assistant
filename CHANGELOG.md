@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.5.0 - 2026-08-07
+
+**严选题库（单题图）+ 开发端 MinerU 流水线**
+
+- 严选题第一章 36 题：OCR 定位 + 单题独立裁剪（选择 18 / 填空 12 / 解答 6），刷题页显示单题图
+- 章节结构更新为 8 个知识点节，题目按知识点归属
+- 开发端 MinerU 流水线：tools/pdf_pipeline（PDF → MinerU → DeepSeek → 结构化题目 JSON）
+- APP 预留 OCR 字段（sourceType / sourceImageUrl / sourceRawJson）与 ocrService 空壳
+- 测试扩展至 101 项
+
 ## v1.4.0 - 2026-08-07
 
 **移动端体验优化**

@@ -3,10 +3,11 @@ import type { Question } from '@/types/question'
 /** 校验单道题目结构，返回错误信息数组（空数组表示合法） */
 export function validateQuestion(q: Question): string[] {
   const errors: string[] = []
-  const idPattern = /^c\d+-s\d+-\d{3}$/
+  // 兼容文本题 c1-s1-001 与严选题图题 c1-x01 / c1-t01 / c1-j01
+  const idPattern = /^c\d+-s\d+-\d{3}$|^c\d+-[xtj]\d+$/
 
   if (!q.id || !idPattern.test(q.id)) {
-    errors.push(`id "${q.id}" 不符合 c<章>-s<节>-<3位序号> 格式`)
+    errors.push(`id "${q.id}" 不符合 c<章>-s<节>-<3位序号> 或 c<章>-<x/t/j><题号> 格式`)
   }
   if (!q.chapter) errors.push('chapter 不能为空')
   if (!q.section) errors.push('section 不能为空')
@@ -15,6 +16,8 @@ export function validateQuestion(q: Question): string[] {
   if (![1, 2, 3].includes(q.difficulty)) errors.push('difficulty 必须是 1-3')
   if (!q.source) errors.push('source 不能为空')
   if (!q.question) errors.push('question 不能为空')
+  // 题图题（扫描版）无标准答案/选项，走自评，其余字段已校验
+  if (q.image) return errors
   if (q.type === 'choice') {
     if (!Array.isArray(q.options) || q.options.length < 2) errors.push('选择题至少要有 2 个选项')
   }

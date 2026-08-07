@@ -17,12 +17,22 @@ export interface Question {
   source: string
   /** 题目文本，公式用 $$...$$ 包裹 */
   question: string
+  /** 题图（扫描版题目）路径，存在时优先显示图片 */
+  image?: string
+  /** 原书题号，如严选题第 3 题 */
+  number?: string
   /** 选择题选项（type=choice 时必填） */
   options?: string[]
-  /** 标准答案 */
+  /** 标准答案（题图题暂无，走自评） */
   answer: string
   /** 官方解析 */
   analysis: string
+  /** 来源类型：manual 手动 / mineru_dev 开发端流水线 / local_ocr 手机识图（预留） */
+  sourceType?: 'manual' | 'mineru_dev' | 'local_ocr'
+  /** 来源图片 URL */
+  sourceImageUrl?: string
+  /** 来源原始结构化数据（MinerU/OCR 元数据） */
+  sourceRawJson?: Record<string, unknown> | null
 }
 
 /** 章节 ID 解析结果 */

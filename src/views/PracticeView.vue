@@ -2,8 +2,7 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { chapters } from '@/data/chapters'
-import { questionBank } from '@/data/questionBank'
-import { parseQuestionId } from '@/data/validate'
+import { questionsOf } from '@/data/bank'
 import { judgeAnswer } from '@/data/judge'
 import { initDb, recordAnswer, addToWrongBook } from '@/db/db'
 import { openWithContext } from '@/services/aiChat'
@@ -18,14 +17,15 @@ const cid = String(route.params.cid)
 const sid = String(route.params.sid)
 
 const chapter = computed(() => chapters.find((c) => c.id === cid))
-const sectionTitle = computed(() => chapter.value?.sections.find((s) => s.id === sid)?.title ?? '')
+const section = computed(() => chapter.value?.sections.find((s) => s.id === sid))
+const sectionTitle = computed(() => section.value?.title ?? '')
 
-const queue = computed(() =>
-  questionBank.filter((q) => {
-    const key = parseQuestionId(q.id)
-    return key && `c${key.chapter}` === cid && `s${key.section}` === sid
-  }),
-)
+const queue = computed(() => {
+  const ch = chapter.value
+  const sec = section.value
+  if (!ch || !sec) return []
+  return questionsOf(ch.title, sec.title)
+})
 
 const currentIndex = ref(0)
 const current = computed<Question | undefined>(() => queue.value[currentIndex.value])
@@ -106,7 +106,8 @@ function viewAnswer(q: Question) {
 
 /** 解答题自评：写 study_record 驱动进度与错题本（答错经 recordAnswer 自动入错题本） */
 function selfAssess(q: Question, correct: boolean) {
-  if (states[q.id] !== 'submitted' || selfAssessed[q.id]) return
+  if (selfAssessed[q.id]) return
+  if (states[q.id] !== 'submitted') states[q.id] = 'submitted'
   selfAssessed[q.id] = true
   const userAnswer = correct ? 'self:correct' : 'self:wrong'
   results[q.id] = { correct, userAnswer }
@@ -151,7 +152,7 @@ function optionClass(q: Question, opt: string): Record<string, boolean> {
 }
 
 function feedbackText(q: Question): string {
-  if (q.type === 'answer') {
+  if (q.image || q.type === 'answer') {
     if (selfAssessed[q.id]) return results[q.id]?.correct ? '自评正确' : '自评错误'
     return '已查看答案，请自行核对'
   }
@@ -159,7 +160,7 @@ function feedbackText(q: Question): string {
 }
 
 function feedbackClass(q: Question): string {
-  if (q.type === 'answer') {
+  if (q.image || q.type === 'answer') {
     if (selfAssessed[q.id]) return results[q.id]?.correct ? 'is-correct' : 'is-wrong'
     return 'is-neutral'
   }
@@ -193,11 +194,25 @@ function feedbackClass(q: Question): string {
         </div>
 
         <div class="question-text">
-          <KatexText :text="current.question" />
+          <img
+            v-if="current.image"
+            :src="current.image"
+            class="question-image"
+            alt="题目图片（严选题扫描版）"
+          />
+          <KatexText v-else :text="current.question" />
+        </div>
+
+        <!-- 题图题：直接自评对错 -->
+        <div v-if="current.image" class="answer-area">
+          <div v-if="states[current.id] !== 'submitted'" class="self-assess">
+            <button class="btn btn-success" @click="selfAssess(current, true)">答对了</button>
+            <button class="btn btn-danger" @click="selfAssess(current, false)">答错了</button>
+          </div>
         </div>
 
         <!-- 选择题 -->
-        <div v-if="current.type === 'choice'" class="option-list">
+        <div v-else-if="current.type === 'choice'" class="option-list">
           <button
             v-for="opt in current.options ?? []"
             :key="opt"
@@ -256,7 +271,8 @@ function feedbackClass(q: Question): string {
         <div v-if="states[current.id] === 'submitted'" class="analysis">
           <div class="analysis-title">答案解析</div>
           <div class="analysis-body">
-            <KatexText :text="current.analysis" />
+            <KatexText v-if="current.analysis" :text="current.analysis" />
+            <span v-else class="placeholder">（参考答案在严选题书末，暂未录入）</span>
           </div>
         </div>
       </div>
@@ -337,6 +353,15 @@ function feedbackClass(q: Question): string {
   font-size: 16px;
   line-height: 1.8;
   margin-bottom: 16px;
+}
+
+.question-image {
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: #fff;
 }
 
 .option-list {
