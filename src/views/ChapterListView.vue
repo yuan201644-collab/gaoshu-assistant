@@ -1,13 +1,32 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { chapters } from '@/data/chapters'
 import { questionBank } from '@/data/questionBank'
+import { getProgress, deriveSectionState } from '@/db/db'
 
 const router = useRouter()
 
 // 记录已展开的章 id，默认全部展开
 const openChapters = ref<Set<string>>(new Set(chapters.map((c) => c.id)))
+
+// 各节进度缓存，未加载完默认显示「已做 0 · 错 0」
+const progressMap = reactive<
+  Record<string, { doneCount: number; wrongCount: number; lastTs: number }>
+>({})
+
+onMounted(async () => {
+  const pairs: Array<[string, string]> = []
+  for (const c of chapters) {
+    for (const s of c.sections) {
+      pairs.push([c.id, s.id])
+    }
+  }
+  const results = await Promise.all(pairs.map(([cid, sid]) => getProgress(cid, sid)))
+  pairs.forEach(([cid, sid], i) => {
+    progressMap[`${cid}-${sid}`] = results[i]
+  })
+})
 
 function toggleChapter(id: string) {
   const next = new Set(openChapters.value)
@@ -19,6 +38,25 @@ function toggleChapter(id: string) {
 function countOf(chapterId: string, sectionId: string): number {
   const prefix = `${chapterId}-${sectionId}-`
   return questionBank.filter((q) => q.id.startsWith(prefix)).length
+}
+
+function progressOf(chapterId: string, sectionId: string) {
+  return progressMap[`${chapterId}-${sectionId}`] ?? { doneCount: 0, wrongCount: 0, lastTs: 0 }
+}
+
+function sectionState(chapterId: string, sectionId: string) {
+  const { doneCount, wrongCount } = progressOf(chapterId, sectionId)
+  return deriveSectionState(doneCount, wrongCount, countOf(chapterId, sectionId))
+}
+
+function stateColor(chapterId: string, sectionId: string): string {
+  const st = sectionState(chapterId, sectionId)
+  return st === 'done' ? 'var(--state-done)' : st === 'doing' ? 'var(--state-doing)' : 'var(--state-todo)'
+}
+
+function stateLabel(chapterId: string, sectionId: string): string {
+  const st = sectionState(chapterId, sectionId)
+  return st === 'done' ? '已完成' : st === 'doing' ? '学习中' : '未学习'
 }
 
 function goPractice(chapterId: string, sectionId: string) {
@@ -47,12 +85,12 @@ function goPractice(chapterId: string, sectionId: string) {
           <div class="section-main">
             <span class="section-title">{{ section.title }}</span>
             <span class="section-stats">
-              共 {{ countOf(chapter.id, section.id) }} 题 · 已做 0 · 错 0
+              共 {{ countOf(chapter.id, section.id) }} 题 · 已做 {{ progressOf(chapter.id, section.id).doneCount }} · 错 {{ progressOf(chapter.id, section.id).wrongCount }}
             </span>
           </div>
           <span class="section-state">
-            <span class="dot" :style="{ background: 'var(--state-todo)' }"></span>
-            未学习
+            <span class="dot" :style="{ background: stateColor(chapter.id, section.id) }"></span>
+            {{ stateLabel(chapter.id, section.id) }}
           </span>
         </li>
       </ul>
