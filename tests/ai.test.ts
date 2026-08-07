@@ -6,6 +6,7 @@ import {
   loadAiConfig,
   saveAiConfig,
   chatCompletion,
+  streamChatCompletion,
   buildExplainPrompt,
 } from '@/services/ai'
 import type { Question } from '@/types/question'
@@ -44,6 +45,7 @@ const CFG = {
   model: 'gpt-4o-mini',
   apiKey: 'sk-test',
   temperature: 0.3,
+  maxTokens: 2000,
 }
 
 describe('ai.ts — localStorage 配置读写', () => {
@@ -138,6 +140,65 @@ describe('ai.ts — chatCompletion', () => {
   it('响应无 choices / content 非字符串 → 抛「AI 响应格式异常」', async () => {
     fetchMock.mockResolvedValueOnce(okRes({ choices: [] }))
     await expect(chatCompletion([{ role: 'user', content: 'hi' }], CFG)).rejects.toThrow(
+      'AI 响应格式异常',
+    )
+  })
+})
+
+describe('ai.ts — streamChatCompletion 流式', () => {
+  it('解析 SSE 流，逐块回调增量内容', async () => {
+    const sse =
+      'data: {"choices":[{"delta":{"content":"你好"}}]}\n\ndata: {"choices":[{"delta":{"content":"，世界"}}]}\n\ndata: [DONE]\n\n'
+    fetchMock.mockResolvedValueOnce(
+      new Response(sse, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
+    )
+    const deltas: string[] = []
+    const full = await streamChatCompletion([{ role: 'user', content: 'hi' }], (d) => deltas.push(d), CFG)
+    expect(deltas).toEqual(['你好', '，世界'])
+    expect(full).toBe('你好，世界')
+  })
+
+  it('body 含 stream:true 与 max_tokens', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response('data: {"choices":[{"delta":{"content":"x"}}]}\n\ndata: [DONE]', {
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+      }),
+    )
+    await streamChatCompletion([{ role: 'user', content: 'hi' }], () => {}, CFG)
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
+    expect(body.stream).toBe(true)
+    expect(body.max_tokens).toBe(2000)
+  })
+
+  it('未配置 apiKey → 抛可读错误且不发起 fetch', async () => {
+    await expect(streamChatCompletion([{ role: 'user', content: 'hi' }], () => {})).rejects.toThrow(
+      '请先在设置页配置 API',
+    )
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('HTTP 401 → 抛含状态码的错误', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response('{"error":{"message":"bad"}}', { status: 401 }),
+    )
+    await expect(streamChatCompletion([{ role: 'user', content: 'hi' }], () => {}, CFG)).rejects.toThrow(
+      /HTTP 401/,
+    )
+  })
+
+  it('网络异常 → 抛可读错误', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await expect(streamChatCompletion([{ role: 'user', content: 'hi' }], () => {}, CFG)).rejects.toThrow(
+      '网络异常，请检查网络连接',
+    )
+  })
+
+  it('流式结束但无内容 → 抛「AI 响应格式异常」', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response('data: [DONE]', { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
+    )
+    await expect(streamChatCompletion([{ role: 'user', content: 'hi' }], () => {}, CFG)).rejects.toThrow(
       'AI 响应格式异常',
     )
   })

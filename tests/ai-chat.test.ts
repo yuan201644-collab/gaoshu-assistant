@@ -5,20 +5,31 @@ import { nextTick } from 'vue'
 
 vi.mock('@/services/ai', () => ({
   chatCompletion: vi.fn(),
+  streamChatCompletion: vi.fn(),
   loadAiConfig: vi.fn(() => ({
     baseURL: 'https://api.openai.com/v1',
     model: 'gpt-4o-mini',
     apiKey: 'sk-test',
     temperature: 0.3,
+    maxTokens: 2000,
   })),
 }))
 
 import AiChat from '@/components/AiChat.vue'
-import { chatCompletion } from '@/services/ai'
+import { chatCompletion, streamChatCompletion } from '@/services/ai'
 import { openWithContext, aiChatState } from '@/services/aiChat'
 import type { ChatMessage } from '@/services/ai'
 
 const chatMock = vi.mocked(chatCompletion)
+const streamMock = vi.mocked(streamChatCompletion)
+
+/** 流式 mock：调用 onDelta 后返回 */
+function streamResolve(text: string) {
+  streamMock.mockImplementation(async (_m, onDelta) => {
+    onDelta(text)
+    return text
+  })
+}
 
 /** 已挂载的 wrapper 集合，afterEach 统一卸载，防止旧组件 watcher 污染 aiChatState */
 let mountedWrappers: Array<ReturnType<typeof mount>> = []
@@ -35,10 +46,9 @@ async function openPanel(wrapper: ReturnType<typeof mount>) {
   await nextTick()
 }
 
-/** 推进打字机完成：等待真实时间让回复逐字填充完成 */
+/** 推进流式消息渲染 */
 async function flushType() {
   await flushPromises()
-  await new Promise((r) => setTimeout(r, 500))
   await nextTick()
 }
 
@@ -71,7 +81,7 @@ describe('AiChat — 面板开合', () => {
 
 describe('AiChat — 发送消息', () => {
   it('输入 + 回车发送：chatCompletion 收到含该 user 消息的数组，回复渲染为 assistant 气泡', async () => {
-    chatMock.mockResolvedValue('好的，我来讲解')
+    streamResolve('好的，我来讲解')
     const wrapper = mountAiChat()
     await openPanel(wrapper)
 
@@ -79,14 +89,14 @@ describe('AiChat — 发送消息', () => {
     await wrapper.find('.ai-input').trigger('keydown.enter')
     await flushType()
 
-    expect(chatMock).toHaveBeenCalledTimes(1)
-    const msgs = chatMock.mock.calls[0][0] as ChatMessage[]
+    expect(streamMock).toHaveBeenCalledTimes(1)
+    const msgs = streamMock.mock.calls[0][0] as ChatMessage[]
     expect(msgs.some((m) => m.role === 'user' && m.content === '帮我讲解这道题')).toBe(true)
     expect(wrapper.find('.ai-msg-assistant').text()).toContain('好的，我来讲解')
   })
 
   it('点击发送按钮同样触发', async () => {
-    chatMock.mockResolvedValue('回复')
+    streamResolve('回复')
     const wrapper = mountAiChat()
     await openPanel(wrapper)
 
@@ -94,7 +104,7 @@ describe('AiChat — 发送消息', () => {
     await wrapper.find('.ai-send').trigger('click')
     await flushType()
 
-    expect(chatMock).toHaveBeenCalledTimes(1)
+    expect(streamMock).toHaveBeenCalledTimes(1)
     expect(wrapper.find('.ai-msg-assistant').text()).toContain('回复')
   })
 
@@ -120,7 +130,7 @@ describe('AiChat — 发送消息', () => {
 
 describe('AiChat — 快捷指令', () => {
   it('点击 chip「讲解这道题」以该文本作为 user 消息发送', async () => {
-    chatMock.mockResolvedValue('讲解')
+    streamResolve('讲解')
     const wrapper = mountAiChat()
     await openPanel(wrapper)
 
@@ -129,8 +139,8 @@ describe('AiChat — 快捷指令', () => {
     await chip.trigger('click')
     await flushPromises()
 
-    expect(chatMock).toHaveBeenCalledTimes(1)
-    const msgs = chatMock.mock.calls[0][0] as ChatMessage[]
+    expect(streamMock).toHaveBeenCalledTimes(1)
+    const msgs = streamMock.mock.calls[0][0] as ChatMessage[]
     expect(msgs.some((m) => m.role === 'user' && m.content === '讲解这道题')).toBe(true)
   })
 })
@@ -150,13 +160,12 @@ describe('AiChat — 上下文注入 openWithContext', () => {
 })
 
 describe('AiChat — 加载态与错误', () => {
-  it('发送后显示「思考中…」，resolve 后消失并渲染回复', async () => {
-    let resolveFn!: (v: string) => void
-    chatMock.mockReturnValue(
-      new Promise<string>((resolve) => {
-        resolveFn = resolve
-      }),
-    )
+  it('发送后显示思考点，流式首个增量后消失并渲染回复', async () => {
+    let deltaFn!: (d: string) => void
+    streamMock.mockImplementation((_m, onDelta) => {
+      deltaFn = onDelta
+      return new Promise<string>(() => {}) // 不 resolve，模拟流式进行中
+    })
     const wrapper = mountAiChat()
     await openPanel(wrapper)
 
@@ -167,15 +176,15 @@ describe('AiChat — 加载态与错误', () => {
     expect(wrapper.find('.ai-thinking').exists()).toBe(true)
     expect(wrapper.find('.ai-send').attributes('disabled')).toBeDefined()
 
-    resolveFn('回复完毕')
-    await flushType()
+    deltaFn('回复完毕')
+    await nextTick()
 
     expect(wrapper.find('.ai-thinking').exists()).toBe(false)
     expect(wrapper.find('.ai-msg-assistant').text()).toContain('回复完毕')
   })
 
   it('chatCompletion reject → 展示错误文本', async () => {
-    chatMock.mockRejectedValue(new Error('AI 请求失败（HTTP 429）：限流'))
+    streamMock.mockRejectedValue(new Error('AI 请求失败（HTTP 429）：限流'))
     const wrapper = mountAiChat()
     await openPanel(wrapper)
 

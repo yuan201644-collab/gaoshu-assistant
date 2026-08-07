@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { aiChatState, openWithContext, closeAiChat } from '@/services/aiChat'
-import { chatCompletion } from '@/services/ai'
+import { streamChatCompletion } from '@/services/ai'
 import type { ChatMessage } from '@/services/ai'
 import MarkdownKatex from '@/components/MarkdownKatex.vue'
 
@@ -13,7 +13,6 @@ const messages = ref<UiMessage[]>([])
 const input = ref('')
 const sending = ref(false)
 const messagesEl = ref<HTMLElement | null>(null)
-let typeTimer: number | undefined
 
 function scrollToBottom() {
   const el = messagesEl.value
@@ -44,10 +43,6 @@ onMounted(() => {
   aiChatState.context = ''
 })
 
-onBeforeUnmount(() => {
-  if (typeTimer !== undefined) window.clearInterval(typeTimer)
-})
-
 function togglePanel() {
   aiChatState.isOpen = !aiChatState.isOpen
 }
@@ -58,30 +53,6 @@ function send() {
   sendText(text)
 }
 
-/** 打字机：把 text 逐字写入最后一条 assistant 消息 */
-function typeReply(text: string): Promise<void> {
-  return new Promise((resolve) => {
-    const msg = messages.value[messages.value.length - 1]
-    if (!msg || msg.role !== 'assistant') return resolve()
-    msg.content = ''
-    let i = 0
-    const step = 2
-    const tick = () => {
-      i += step
-      msg.content = text.slice(0, i)
-      scrollToBottom()
-      if (i >= text.length) {
-        msg.content = text
-        if (typeTimer !== undefined) window.clearInterval(typeTimer)
-        typeTimer = undefined
-        resolve()
-      }
-    }
-    tick()
-    typeTimer = window.setInterval(tick, 28)
-  })
-}
-
 async function sendText(text: string) {
   messages.value.push({ role: 'user', content: text })
   messages.value.push({ role: 'assistant', content: '' })
@@ -89,10 +60,17 @@ async function sendText(text: string) {
   sending.value = true
   scrollToBottom()
   try {
-    const reply = await chatCompletion(
+    await streamChatCompletion(
       messages.value.filter((m) => m.content).map(({ role, content }) => ({ role, content })),
+      (delta) => {
+        // 必须通过 messages.value 访问 proxy 元素更新，直接改局部对象不触发响应式
+        const last = messages.value[messages.value.length - 1]
+        if (last && last.role === 'assistant') {
+          last.content += delta
+          scrollToBottom()
+        }
+      },
     )
-    await typeReply(reply)
   } catch (e) {
     const last = messages.value[messages.value.length - 1]
     if (last && last.role === 'assistant') {
