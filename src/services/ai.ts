@@ -28,7 +28,8 @@ export function loadAiConfig(): AiConfig {
     const raw = localStorage.getItem(AI_CONFIG_KEY)
     if (!raw) return { ...def }
     const parsed = JSON.parse(raw) as Partial<AiConfig>
-    return { ...def, ...parsed }
+    // maxTokens 由代码统一控制（不随旧配置漂移，避免旧 2000 覆盖导致 AI 截断）
+    return { ...def, ...parsed, maxTokens: def.maxTokens }
   } catch {
     return { ...def }
   }
@@ -168,21 +169,18 @@ export async function streamChatCompletion(
   return full
 }
 
-/** 构造讲解 prompt：稳定标记 + 题干/作答/答案/解析 + 结尾请求语 */
+/** 讲解要求（system 消息）：不进入对话气泡，避免题干消息过长 */
+export const SYSTEM_EXPLAIN_PROMPT =
+  '你是高等数学学习助手。讲解要求：给出清晰的解题思路、关键步骤、易错点提醒；用通俗易懂的语言；数学公式用 $$...$$ 包裹（行内公式用 $...$）。'
+
+/** 构造题目上下文（user 消息）：只含题目信息，讲解要求由 SYSTEM_EXPLAIN_PROMPT 承担 */
 export function buildExplainPrompt(question: Question, userAnswer?: string): string {
   const typeLabel =
     question.type === 'choice' ? '选择题' : question.type === 'fill' ? '填空题' : '解答题'
-  const lines = [
-    '请根据下面的题目信息，给出一份详细的数学讲解。',
-    `【题型】${typeLabel}`,
-    `【题干】${question.question}`,
-  ]
+  const lines = [`【题型】${typeLabel}`, `【题干】${question.question}`]
   if (userAnswer !== undefined && userAnswer !== '') {
     lines.push(`【我的作答】${userAnswer}`)
   }
   lines.push(`【标准答案】${question.answer}`)
-  lines.push(`【解析】${question.analysis}`)
-  lines.push('请用通俗易懂的语言讲解解题思路与关键步骤，并指出易错点。')
-  lines.push('数学公式请用 $$...$$ 包裹（行内公式用 $...$）。')
   return lines.join('\n')
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.6.2 - 2026-08-08
+
+**PATCH：AI 讲解 prompt 优化 + 修复旧配置截断**
+
+- 讲解要求移入 system 消息，user 消息只含题目（长度缩短约 4 倍，消除省略号）
+- loadAiConfig 强制 maxTokens=8000，不受旧 localStorage 配置（2000）覆盖
+
 ## v1.6.1 - 2026-08-08
 
 **PATCH：修复 AI 复杂题回答被截断**

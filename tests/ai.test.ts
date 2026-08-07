@@ -7,6 +7,7 @@ import {
   saveAiConfig,
   chatCompletion,
   streamChatCompletion,
+  SYSTEM_EXPLAIN_PROMPT,
   buildExplainPrompt,
 } from '@/services/ai'
 import type { Question } from '@/types/question'
@@ -45,7 +46,7 @@ const CFG = {
   model: 'gpt-4o-mini',
   apiKey: 'sk-test',
   temperature: 0.3,
-  maxTokens: 2000,
+  maxTokens: 8000,
 }
 
 describe('ai.ts — localStorage 配置读写', () => {
@@ -168,7 +169,7 @@ describe('ai.ts — streamChatCompletion 流式', () => {
     await streamChatCompletion([{ role: 'user', content: 'hi' }], () => {}, CFG)
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
     expect(body.stream).toBe(true)
-    expect(body.max_tokens).toBe(2000)
+    expect(body.max_tokens).toBe(8000)
   })
 
   it('未配置 apiKey → 抛可读错误且不发起 fetch', async () => {
@@ -219,13 +220,19 @@ describe('ai.ts — buildExplainPrompt', () => {
     analysis: '根据定义',
   }
 
-  it('含题型/题干/标准答案/解析等稳定标记', () => {
+  it('含题型/题干/标准答案等标记，不含解析与讲解要求', () => {
     const prompt = buildExplainPrompt(q)
     expect(prompt).toContain('【题型】选择题')
     expect(prompt).toContain('【题干】函数 f(x) 的定义域？')
     expect(prompt).toContain('【标准答案】B')
-    expect(prompt).toContain('【解析】根据定义')
+    expect(prompt).not.toContain('【解析】')
+    expect(prompt).not.toContain('解题思路')
     expect(prompt).not.toContain('【我的作答】')
+  })
+
+  it('SYSTEM_EXPLAIN_PROMPT 含讲解要求且不长', () => {
+    expect(SYSTEM_EXPLAIN_PROMPT).toContain('解题思路')
+    expect(SYSTEM_EXPLAIN_PROMPT.length).toBeLessThan(200)
   })
 
   it('传入 userAnswer 时含【我的作答】', () => {

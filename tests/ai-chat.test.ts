@@ -6,6 +6,7 @@ import { nextTick } from 'vue'
 vi.mock('@/services/ai', () => ({
   chatCompletion: vi.fn(),
   streamChatCompletion: vi.fn(),
+  SYSTEM_EXPLAIN_PROMPT: '你是高等数学学习助手。讲解要求：解题思路、关键步骤、易错点。',
   loadAiConfig: vi.fn(() => ({
     baseURL: 'https://api.openai.com/v1',
     model: 'gpt-4o-mini',

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted } from 'vue'
 import { aiChatState, openWithContext, closeAiChat } from '@/services/aiChat'
-import { streamChatCompletion } from '@/services/ai'
+import { streamChatCompletion, SYSTEM_EXPLAIN_PROMPT } from '@/services/ai'
 import type { ChatMessage } from '@/services/ai'
 import MarkdownKatex from '@/components/MarkdownKatex.vue'
 
@@ -60,17 +60,19 @@ async function sendText(text: string) {
   sending.value = true
   scrollToBottom()
   try {
-    await streamChatCompletion(
-      messages.value.filter((m) => m.content).map(({ role, content }) => ({ role, content })),
-      (delta) => {
-        // 必须通过 messages.value 访问 proxy 元素更新，直接改局部对象不触发响应式
-        const last = messages.value[messages.value.length - 1]
-        if (last && last.role === 'assistant') {
-          last.content += delta
-          scrollToBottom()
-        }
-      },
-    )
+    const history = messages.value
+      .filter((m) => m.content)
+      .map(({ role, content }) => ({ role, content }))
+    // 讲解要求放 system 消息，不进入对话气泡；user 只含题目上下文
+    const payload: ChatMessage[] = [{ role: 'system', content: SYSTEM_EXPLAIN_PROMPT }, ...history]
+    await streamChatCompletion(payload, (delta) => {
+      // 必须通过 messages.value 访问 proxy 元素更新，直接改局部对象不触发响应式
+      const last = messages.value[messages.value.length - 1]
+      if (last && last.role === 'assistant') {
+        last.content += delta
+        scrollToBottom()
+      }
+    })
   } catch (e) {
     const last = messages.value[messages.value.length - 1]
     if (last && last.role === 'assistant') {
