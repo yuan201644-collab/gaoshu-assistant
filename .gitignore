@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+*.local
+*.log
+android
+ios
+.capacitor
+
+# 协作工作流文件（内部协作机制，不推 GitHub）
+.agent-workflow/
+orchestrator.sh
+orchestrator_auto.sh
+.claude/

@@ -1,0 +1,98 @@
+import type { Question } from '@/types/question'
+
+/**
+ * 题库样本数据：本轮只覆盖 1.1 函数（3 题）与 1.2 极限（4 题），
+ * 三题型混合。后续章节题目在后续轮次补齐。
+ */
+export const questionBank: Question[] = [
+  {
+    id: 'c1-s1-001',
+    chapter: '第一章 函数、极限、连续',
+    section: '1.1 函数',
+    tags: ['函数概念', '定义域'],
+    type: 'choice',
+    difficulty: 1,
+    source: '基础篇例题',
+    question: '函数 $$f(x) = \\ln(x - 1) + \\sqrt{2 - x}$$ 的定义域为（ ）。',
+    options: ['A. $$(1, 2)$$', 'B. $$(1, 2]$$', 'C. $$[1, 2]$$', 'D. $$[1, 2)$$'],
+    answer: 'B',
+    analysis: '由 $$x - 1 > 0$$ 得 $$x > 1$$，由 $$2 - x \\geq 0$$ 得 $$x \\leq 2$$，故定义域为 $$(1, 2]$$，选 B。',
+  },
+  {
+    id: 'c1-s1-002',
+    chapter: '第一章 函数、极限、连续',
+    section: '1.1 函数',
+    tags: ['复合函数'],
+    type: 'fill',
+    difficulty: 1,
+    source: '基础篇例题',
+    question: '设 $$f(x) = \\frac{1}{x}$$，$$g(x) = \\sqrt{x}$$，则复合函数 $$f(g(x))$$ 的表达式为 ______。',
+    answer: '$$\\frac{1}{\\sqrt{x}}$$',
+    analysis: '由复合函数定义，$$f(g(x)) = f(\\sqrt{x}) = \\frac{1}{\\sqrt{x}}$$，且其定义域为 $$x > 0$$。',
+  },
+  {
+    id: 'c1-s1-003',
+    chapter: '第一章 函数、极限、连续',
+    section: '1.1 函数',
+    tags: ['函数的奇偶性'],
+    type: 'answer',
+    difficulty: 2,
+    source: '基础篇例题',
+    question: '判断函数 $$f(x) = \\ln\\left(x + \\sqrt{1 + x^2}\\right)$$ 的奇偶性。',
+    answer: '奇函数',
+    analysis:
+      '$$f(-x) = \\ln\\left(-x + \\sqrt{1 + x^2}\\right) = \\ln\\frac{1}{x + \\sqrt{1 + x^2}} = -\\ln\\left(x + \\sqrt{1 + x^2}\\right) = -f(x)$$，故 $$f(x)$$ 为奇函数。',
+  },
+  {
+    id: 'c1-s2-001',
+    chapter: '第一章 函数、极限、连续',
+    section: '1.2 极限的运算与判定',
+    tags: ['重要极限', '极限计算'],
+    type: 'choice',
+    difficulty: 1,
+    source: '基础篇例题',
+    question: '$$\\lim_{x \\to 0} \\frac{\\sin 3x}{x} =$$（ ）。',
+    options: ['A. 0', 'B. 1', 'C. 3', 'D. 不存在'],
+    answer: 'C',
+    analysis: '由 $$\\lim_{x \\to 0} \\frac{\\sin x}{x} = 1$$，得 $$\\lim_{x \\to 0} \\frac{\\sin 3x}{x} = \\lim_{x \\to 0} \\frac{3\\sin 3x}{3x} = 3$$，选 C。',
+  },
+  {
+    id: 'c1-s2-002',
+    chapter: '第一章 函数、极限、连续',
+    section: '1.2 极限的运算与判定',
+    tags: ['等价无穷小'],
+    type: 'fill',
+    difficulty: 2,
+    source: '基础篇例题',
+    question: '$$\\lim_{x \\to 0} \\frac{1 - \\cos x}{x^2} =$$ ______。',
+    answer: '$$\\frac{1}{2}$$',
+    analysis: '当 $$x \\to 0$$ 时，$$1 - \\cos x \\sim \\frac{1}{2}x^2$$，故原式 $$= \\frac{1}{2}$$。',
+  },
+  {
+    id: 'c1-s2-003',
+    chapter: '第一章 函数、极限、连续',
+    section: '1.2 极限的运算与判定',
+    tags: ['重要极限', '极限计算'],
+    type: 'choice',
+    difficulty: 2,
+    source: '基础篇例题',
+    question: '$$\\lim_{n \\to \\infty}\\left(1 + \\frac{1}{n}\\right)^{2n} =$$（ ）。',
+    options: ['A. $$e$$', 'B. $$e^2$$', 'C. $$2e$$', 'D. $$2$$'],
+    answer: 'B',
+    analysis:
+      '由重要极限 $$\\lim_{n \\to \\infty}\\left(1 + \\frac{1}{n}\\right)^n = e$$，得原式 $$= \\left[\\lim_{n \\to \\infty}\\left(1 + \\frac{1}{n}\\right)^n\\right]^2 = e^2$$，选 B。',
+  },
+  {
+    id: 'c1-s2-004',
+    chapter: '第一章 函数、极限、连续',
+    section: '1.2 极限的运算与判定',
+    tags: ['极限计算', '有理化'],
+    type: 'answer',
+    difficulty: 2,
+    source: '基础篇例题',
+    question: '求极限 $$\\lim_{x \\to 0} \\frac{\\sqrt{1 + x} - 1}{x}$$。',
+    answer: '$$\\frac{1}{2}$$',
+    analysis:
+      '分子有理化：$$\\frac{\\sqrt{1 + x} - 1}{x} = \\frac{(1 + x) - 1}{x\\left(\\sqrt{1 + x} + 1\\right)} = \\frac{1}{\\sqrt{1 + x} + 1} \\to \\frac{1}{2}$$。',
+  },
+]
