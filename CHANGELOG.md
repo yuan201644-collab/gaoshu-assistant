@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.2.1 - 2026-08-07
+
+**PATCH：AI 讲解默认接入 DeepSeek**
+
+- 默认 AI 配置指向 DeepSeek v4-flash（baseURL https://api.deepseek.com/v1）
+- 本机 API key 存于 gitignored `src/config/ai.local.ts`，不入 git
+- 测试隔离本机配置，95 项保持全绿
+
 ## v1.2.0 - 2026-08-07
 
 **AI 讲解模块**

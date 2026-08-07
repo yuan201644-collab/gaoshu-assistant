@@ -3,6 +3,7 @@ dist
 .DS_Store
 *.local
 *.log
+src/config/ai.local.ts
 android
 ios
 .capacitor

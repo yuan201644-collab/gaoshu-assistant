@@ -10,6 +10,9 @@ import {
 } from '@/services/ai'
 import type { Question } from '@/types/question'
 
+// 隔离本机 AI 配置（ai.local.ts 含真实 key），保证测试使用纯默认值
+vi.mock('@/config/ai.local', () => ({ localAiConfig: {} }))
+
 const fetchMock = vi.fn()
 
 function okRes(body: unknown): Response {

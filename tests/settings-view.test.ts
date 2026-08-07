@@ -2,6 +2,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
+// 隔离本机 AI 配置（ai.local.ts 含真实 key），保证默认配置为空 apiKey
+vi.mock('@/config/ai.local', () => ({ localAiConfig: {} }))
+
 vi.mock('@/services/ai', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/services/ai')>()
   return { ...actual, chatCompletion: vi.fn() }

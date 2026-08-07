@@ -1,4 +1,5 @@
 import type { Question } from '@/types/question'
+import { localAiConfig } from '@/config/ai.local'
 
 export interface AiConfig {
   baseURL: string
@@ -15,7 +16,7 @@ export interface ChatMessage {
 export const AI_CONFIG_KEY = 'gaoshu:ai-config'
 
 export function defaultAiConfig(): AiConfig {
-  return { baseURL: 'https://api.openai.com/v1', model: 'gpt-4o-mini', apiKey: '', temperature: 0.3 }
+  return { baseURL: 'https://api.openai.com/v1', model: 'gpt-4o-mini', apiKey: '', temperature: 0.3, ...localAiConfig }
 }
 
 /** 读 localStorage；无存储/JSON 损坏 → 默认；部分字段 → 与默认 merge 补齐 */
