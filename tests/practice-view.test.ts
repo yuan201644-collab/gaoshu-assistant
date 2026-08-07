@@ -8,6 +8,8 @@ const dbMock = vi.hoisted(() => ({
   recordAnswer: vi.fn().mockResolvedValue(undefined),
   addToWrongBook: vi.fn().mockResolvedValue(undefined),
 }))
+const aiMock = vi.hoisted(() => ({ buildExplainPrompt: vi.fn(() => 'context-text') }))
+const aiChatMock = vi.hoisted(() => ({ openWithContext: vi.fn() }))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { cid: 'c1', sid: 's1' } }),
@@ -16,17 +18,24 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@/db/db', () => dbMock)
 
+vi.mock('@/services/ai', () => aiMock)
+vi.mock('@/services/aiChat', () => aiChatMock)
+
 import PracticeView from '@/views/PracticeView.vue'
 import { recordAnswer, addToWrongBook } from '@/db/db'
+import { openWithContext } from '@/services/aiChat'
+import { buildExplainPrompt } from '@/services/ai'
 
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
 })
 
-/** 底部操作条按钮：0=上一题 1=标记错题 2=下一题/完成 */
-function bottomBtns(wrapper: ReturnType<typeof mount>) {
-  return wrapper.findAll('.practice-bottom button')
+/** 底部操作条按钮按文本查找（按钮含：上一题/标记错题/AI 讲解/下一题/完成） */
+function btnByText(wrapper: ReturnType<typeof mount>, text: string) {
+  const btn = wrapper.findAll('.practice-bottom button').find((b) => b.text() === text)
+  if (!btn) throw new Error(`未找到底部按钮：${text}`)
+  return btn
 }
 
 describe('PracticeView — c1-s1 选择题', () => {
@@ -88,7 +97,7 @@ describe('PracticeView — c1-s1 填空题', () => {
     const wrapper = mount(PracticeView)
     await flushPromises()
 
-    await bottomBtns(wrapper)[2].trigger('click') // 下一题 → 第 2 题
+    await btnByText(wrapper, '下一题').trigger('click')
     await flushPromises()
     expect(wrapper.text()).toContain('第 2 / 3 题')
 
@@ -104,7 +113,7 @@ describe('PracticeView — c1-s1 填空题', () => {
 
 describe('PracticeView — c1-s1 解答题自评', () => {
   async function toAnswerQuestion(wrapper: ReturnType<typeof mount>) {
-    const next = bottomBtns(wrapper)[2]
+    const next = btnByText(wrapper, '下一题')
     await next.trigger('click')
     await flushPromises()
     await next.trigger('click')
@@ -186,7 +195,7 @@ describe('PracticeView — 导航与收藏', () => {
     const wrapper = mount(PracticeView)
     await flushPromises()
 
-    const next = bottomBtns(wrapper)[2]
+    const next = btnByText(wrapper, '下一题')
     await next.trigger('click')
     await flushPromises()
     await next.trigger('click')
@@ -221,5 +230,20 @@ describe('PracticeView — 导航与收藏', () => {
     expect(wrapper.find('.fav-btn').text()).toBe('★')
     await wrapper.find('.fav-btn').trigger('click')
     expect(wrapper.find('.fav-btn').text()).toBe('☆')
+  })
+})
+
+describe('PracticeView — AI 讲解', () => {
+  it('底部有「AI 讲解」按钮，点击触发 openWithContext 且传入 buildExplainPrompt 的上下文', async () => {
+    const wrapper = mount(PracticeView)
+    await flushPromises()
+
+    const aiBtn = wrapper.find('.ai-explain-btn')
+    expect(aiBtn.exists()).toBe(true)
+    expect(aiBtn.text()).toBe('AI 讲解')
+
+    await aiBtn.trigger('click')
+    expect(buildExplainPrompt).toHaveBeenCalledTimes(1)
+    expect(openWithContext).toHaveBeenCalledWith('context-text')
   })
 })

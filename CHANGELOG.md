@@ -1,5 +1,15 @@
 # Changelog
 
+## v1.2.0 - 2026-08-07
+
+**AI 讲解模块**
+
+- OpenAI 兼容 API 封装：chatCompletion、配置 localStorage 持久化、讲解 prompt 构造
+- 全局 AI 对话悬浮窗：多轮对话、预设快捷指令、上下文注入
+- 刷题页「AI 讲解」一键带入当前题目上下文
+- 设置页 API 配置：baseURL / API Key / 模型 / temperature / 测试连接
+- 测试扩展至 95 项
+
 ## v1.1.0 - 2026-08-07
 
 **刷题核心链路 + 本地持久化**

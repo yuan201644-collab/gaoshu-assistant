@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { tabs } from '@/router'
+import AiChat from '@/components/AiChat.vue'
 
 const route = useRoute()
 const hideTab = computed(() => route.meta.hideTab === true)
@@ -12,6 +13,7 @@ const hideTab = computed(() => route.meta.hideTab === true)
     <main class="app-main">
       <router-view />
     </main>
+    <AiChat />
     <nav v-if="!hideTab" class="app-tab" aria-label="主导航">
       <router-link
         v-for="tab in tabs"

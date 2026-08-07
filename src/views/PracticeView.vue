@@ -6,6 +6,8 @@ import { questionBank } from '@/data/questionBank'
 import { parseQuestionId } from '@/data/validate'
 import { judgeAnswer } from '@/data/judge'
 import { initDb, recordAnswer, addToWrongBook } from '@/db/db'
+import { openWithContext } from '@/services/aiChat'
+import { buildExplainPrompt } from '@/services/ai'
 import KatexText from '@/components/KatexText.vue'
 import type { Question } from '@/types/question'
 
@@ -113,6 +115,13 @@ function selfAssess(q: Question, correct: boolean) {
 
 function markWrong(q: Question) {
   void addToWrongBook(q.id, q.type)
+}
+
+/** 带当前题目上下文打开 AI 讲解悬浮窗（仅注入，不自动发送） */
+function askAi() {
+  const q = current.value
+  if (!q) return
+  openWithContext(buildExplainPrompt(q, results[q.id]?.userAnswer))
 }
 
 function goPrev() {
@@ -262,6 +271,7 @@ function feedbackClass(q: Question): string {
         >
           标记错题
         </button>
+        <button class="btn btn-ghost ai-explain-btn" @click="askAi">AI 讲解</button>
         <button
           class="btn btn-primary"
           :disabled="currentIndex === queue.length - 1 && states[current.id] !== 'submitted'"
