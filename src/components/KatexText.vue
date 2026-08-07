@@ -21,7 +21,15 @@ const segments = computed<Segment[]>(() => {
       segs.push({ type: 'text', content: props.text.slice(lastIndex, m.index), display: false })
     }
     const token = m[1]
-    const display = token.startsWith('$$') || token.startsWith('\\[')
+    // 块级公式仅当独立成行（前后是换行/文本边界）；句中公式一律行内，
+    // 否则题解中「由 $$x>1$$ 得」这类公式会独占一行，产生大片空白
+    const before = props.text.slice(0, m.index)
+    const after = props.text.slice(m.index + token.length)
+    const isBlockSyntax = token.startsWith('$$') || token.startsWith('\\[')
+    const display =
+      isBlockSyntax &&
+      (before.length === 0 || /[\n]$/.test(before)) &&
+      (after.length === 0 || /^[\n\s]/.test(after))
     let content = token
     if (token.startsWith('$$') || token.startsWith('\\[')) content = token.slice(2, -2)
     else content = token.slice(1, -1)

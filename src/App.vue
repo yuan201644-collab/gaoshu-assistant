@@ -11,7 +11,11 @@ const hideTab = computed(() => route.meta.hideTab === true)
 <template>
   <div class="app-shell">
     <main class="app-main">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="fade-slide" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
     <AiChat />
     <nav v-if="!hideTab" class="app-tab" aria-label="主导航">

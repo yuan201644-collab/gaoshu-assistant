@@ -35,6 +35,13 @@ async function openPanel(wrapper: ReturnType<typeof mount>) {
   await nextTick()
 }
 
+/** 推进打字机完成：等待真实时间让回复逐字填充完成 */
+async function flushType() {
+  await flushPromises()
+  await new Promise((r) => setTimeout(r, 500))
+  await nextTick()
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   // aiChatState 为模块级单例，跨用例共享；显式复位保证从隐藏态起步
@@ -70,7 +77,7 @@ describe('AiChat — 发送消息', () => {
 
     await wrapper.find('.ai-input').setValue('帮我讲解这道题')
     await wrapper.find('.ai-input').trigger('keydown.enter')
-    await flushPromises()
+    await flushType()
 
     expect(chatMock).toHaveBeenCalledTimes(1)
     const msgs = chatMock.mock.calls[0][0] as ChatMessage[]
@@ -85,7 +92,7 @@ describe('AiChat — 发送消息', () => {
 
     await wrapper.find('.ai-input').setValue('用按钮发送')
     await wrapper.find('.ai-send').trigger('click')
-    await flushPromises()
+    await flushType()
 
     expect(chatMock).toHaveBeenCalledTimes(1)
     expect(wrapper.find('.ai-msg-assistant').text()).toContain('回复')
@@ -161,7 +168,7 @@ describe('AiChat — 加载态与错误', () => {
     expect(wrapper.find('.ai-send').attributes('disabled')).toBeDefined()
 
     resolveFn('回复完毕')
-    await flushPromises()
+    await flushType()
 
     expect(wrapper.find('.ai-thinking').exists()).toBe(false)
     expect(wrapper.find('.ai-msg-assistant').text()).toContain('回复完毕')

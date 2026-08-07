@@ -118,6 +118,18 @@ a {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 16px;
+  animation: card-in 0.3s ease both;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .card-title {
@@ -188,14 +200,13 @@ a {
   width: 100%;
 }
 
-/* 页面通用容器 */
+/* 页面通用容器：顶部/底部预留系统安全区（状态栏、底部手势条） */
 .page {
-  padding: 16px;
-  padding-bottom: 96px; /* 为底部 Tab 留出空间 */
+  padding: calc(16px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
 }
 
 .page-full {
-  padding: 16px;
+  padding: calc(16px + env(safe-area-inset-top)) 16px 16px;
 }
 
 .page-title {
@@ -226,6 +237,22 @@ a {
   overflow-x: auto;
   overflow-y: hidden;
   padding: 2px 0;
+}
+
+/* 路由切换过渡 */
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 /* 桌面端页面宽度限制 */

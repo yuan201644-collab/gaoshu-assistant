@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { aiChatState, openWithContext, closeAiChat } from '@/services/aiChat'
 import { chatCompletion } from '@/services/ai'
 import type { ChatMessage } from '@/services/ai'
-import KatexText from '@/components/KatexText.vue'
+import MarkdownKatex from '@/components/MarkdownKatex.vue'
 
 type UiMessage = ChatMessage & { error?: boolean }
 
@@ -13,6 +13,7 @@ const messages = ref<UiMessage[]>([])
 const input = ref('')
 const sending = ref(false)
 const messagesEl = ref<HTMLElement | null>(null)
+let typeTimer: number | undefined
 
 function scrollToBottom() {
   const el = messagesEl.value
@@ -43,6 +44,10 @@ onMounted(() => {
   aiChatState.context = ''
 })
 
+onBeforeUnmount(() => {
+  if (typeTimer !== undefined) window.clearInterval(typeTimer)
+})
+
 function togglePanel() {
   aiChatState.isOpen = !aiChatState.isOpen
 }
@@ -53,22 +58,47 @@ function send() {
   sendText(text)
 }
 
+/** 打字机：把 text 逐字写入最后一条 assistant 消息 */
+function typeReply(text: string): Promise<void> {
+  return new Promise((resolve) => {
+    const msg = messages.value[messages.value.length - 1]
+    if (!msg || msg.role !== 'assistant') return resolve()
+    msg.content = ''
+    let i = 0
+    const step = 2
+    const tick = () => {
+      i += step
+      msg.content = text.slice(0, i)
+      scrollToBottom()
+      if (i >= text.length) {
+        msg.content = text
+        if (typeTimer !== undefined) window.clearInterval(typeTimer)
+        typeTimer = undefined
+        resolve()
+      }
+    }
+    tick()
+    typeTimer = window.setInterval(tick, 28)
+  })
+}
+
 async function sendText(text: string) {
   messages.value.push({ role: 'user', content: text })
+  messages.value.push({ role: 'assistant', content: '' })
   input.value = ''
   sending.value = true
   scrollToBottom()
   try {
     const reply = await chatCompletion(
-      messages.value.map(({ role, content }) => ({ role, content })),
+      messages.value.filter((m) => m.content).map(({ role, content }) => ({ role, content })),
     )
-    messages.value.push({ role: 'assistant', content: reply })
+    await typeReply(reply)
   } catch (e) {
-    messages.value.push({
-      role: 'assistant',
-      content: (e as Error).message || '请求失败',
-      error: true,
-    })
+    const last = messages.value[messages.value.length - 1]
+    if (last && last.role === 'assistant') {
+      last.content = (e as Error).message || '请求失败'
+      last.error = true
+    }
   } finally {
     sending.value = false
     scrollToBottom()
@@ -114,12 +144,11 @@ defineExpose({ openWithContext })
       >
         <span class="ai-msg-label">{{ msg.role === 'user' ? '我' : 'AI' }}</span>
         <div class="ai-msg-body">
-          <KatexText :text="msg.content" />
+          <span v-if="msg.role === 'assistant' && !msg.content && sending" class="ai-thinking">
+            <span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>
+          </span>
+          <MarkdownKatex v-else :text="msg.content" />
         </div>
-      </div>
-      <div v-if="sending" class="ai-msg ai-msg-assistant">
-        <span class="ai-msg-label">AI</span>
-        <div class="ai-msg-body ai-thinking">思考中…</div>
       </div>
     </div>
 
@@ -200,7 +229,7 @@ defineExpose({ openWithContext })
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
   background: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
   font-size: 16px;
@@ -256,7 +285,6 @@ defineExpose({ openWithContext })
   font-size: 14px;
   line-height: 1.7;
   word-break: break-word;
-  white-space: pre-wrap;
   box-shadow: var(--shadow-card);
 }
 
@@ -268,12 +296,44 @@ defineExpose({ openWithContext })
 }
 
 .ai-msg-error .ai-msg-body {
-  background: rgba(229, 72, 77, 0.1);
+  background: color-mix(in srgb, var(--color-danger) 10%, var(--color-surface));
   color: var(--color-danger);
 }
 
 .ai-thinking {
-  color: var(--color-text-muted);
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.ai-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  animation: ai-bounce 1.2s infinite ease-in-out;
+}
+
+.ai-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.ai-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes ai-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
 .ai-chips {
