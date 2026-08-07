@@ -99,5 +99,6 @@ export function buildExplainPrompt(question: Question, userAnswer?: string): str
   lines.push(`【标准答案】${question.answer}`)
   lines.push(`【解析】${question.analysis}`)
   lines.push('请用通俗易懂的语言讲解解题思路与关键步骤，并指出易错点。')
+  lines.push('数学公式请用 $$...$$ 包裹（行内公式用 $...$）。')
   return lines.join('\n')
 }

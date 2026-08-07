@@ -1,32 +1,52 @@
 :root {
-  /* 色板 */
-  --color-primary: #4f6ef7;
-  --color-primary-soft: #eef1fe;
-  --color-success: #34a853;
-  --color-warning: #f5a623;
-  --color-danger: #e5484d;
-  --color-bg: #f6f7fb;
+  /* 色板 —— 统一冷调灰蓝系，主色降饱和更沉稳 */
+  --color-primary: #4c63d2;
+  --color-primary-strong: #3a4fc0;
+  --color-primary-soft: #edf0fb;
+  --color-success: #2f9e57;
+  --color-warning: #e59a20;
+  --color-danger: #dd4450;
+  --color-bg: #f5f6fa;
   --color-surface: #ffffff;
-  --color-border: #e8eaf1;
-  --color-text: #1f2430;
-  --color-text-muted: #8a90a2;
-  --color-text-subtle: #b8bcc9;
+  --color-border: #e6e8f0;
+  --color-border-strong: #d3d7e4;
+  --color-text: #1d2230;
+  --color-text-muted: #7d8396;
+  --color-text-subtle: #adb2c2;
 
   /* 状态色：未学习 / 学习中 / 已完成 */
-  --state-todo: #b8bcc9;
-  --state-doing: #f5a623;
-  --state-done: #34a853;
+  --state-todo: #c2c6d3;
+  --state-doing: #e59a20;
+  --state-done: #2f9e57;
 
   /* 字体与排版 */
   --font-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  --font-mono: 'SFMono-Regular', 'Cascadia Code', Consolas, monospace;
+
+  /* 排版层级 */
+  --text-display: 24px;
+  --text-title: 18px;
+  --text-body: 15px;
+  --text-caption: 13px;
+  --leading-tight: 1.3;
+  --leading-body: 1.7;
 
   /* 尺寸 */
   --radius-sm: 8px;
   --radius-md: 12px;
-  --radius-lg: 16px;
-  --shadow-card: 0 1px 3px rgba(31, 36, 48, 0.06);
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  /* 阴影 —— 带主色色调，替代纯黑 */
+  --shadow-card: 0 1px 2px rgba(50, 68, 160, 0.05), 0 4px 16px rgba(50, 68, 160, 0.06);
+  --shadow-float: 0 6px 24px rgba(50, 68, 160, 0.16);
+
+  /* z-index 阶梯 */
+  --z-tab: 100;
+  --z-fab: 150;
+  --z-panel: 200;
+  --z-toast: 300;
 
   /* 移动端 rem 基准，1rem = 16px */
   font-size: 16px;
@@ -50,9 +70,12 @@ body {
   font-family: var(--font-base);
   background: var(--color-bg);
   color: var(--color-text);
-  line-height: 1.6;
+  line-height: var(--leading-body);
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* 数字使用等宽数字，进度/题号等数据对齐更稳 */
+  font-feature-settings: 'tnum' 1, 'kern' 1;
 }
 
 #app {
@@ -115,12 +138,30 @@ a {
   min-height: 44px;
   border-radius: var(--radius-md);
   font-weight: 600;
-  font-size: 15px;
-  transition: opacity 0.15s ease;
+  font-size: var(--text-body);
+  transition: background 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn:active {
-  opacity: 0.75;
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .btn-primary:hover {
+    background: var(--color-primary-strong);
+  }
 }
 
 .btn-primary {
@@ -158,15 +199,17 @@ a {
 }
 
 .page-title {
-  font-size: 20px;
+  font-size: var(--text-display);
   font-weight: 700;
-  margin-bottom: 4px;
+  letter-spacing: -0.02em;
+  line-height: var(--leading-tight);
+  margin-bottom: 6px;
 }
 
 .page-sub {
-  font-size: 13px;
+  font-size: var(--text-caption);
   color: var(--color-text-muted);
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 /* 状态点 */

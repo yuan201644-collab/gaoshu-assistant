@@ -10,10 +10,10 @@ interface Segment {
   display: boolean
 }
 
-/** 把文本切成普通段与公式段：$$...$$ 块级，$...$ 内联 */
+/** 把文本切成普通段与公式段：$$...$$ / \[...\] 块级，$...$ 内联 */
 const segments = computed<Segment[]>(() => {
   const segs: Segment[] = []
-  const pattern = /(\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g
+  const pattern = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$[^$\n]+?\$)/g
   let lastIndex = 0
   let m: RegExpExecArray | null
   while ((m = pattern.exec(props.text)) !== null) {
@@ -21,8 +21,11 @@ const segments = computed<Segment[]>(() => {
       segs.push({ type: 'text', content: props.text.slice(lastIndex, m.index), display: false })
     }
     const token = m[1]
-    const display = token.startsWith('$$')
-    segs.push({ type: 'math', content: display ? token.slice(2, -2) : token.slice(1, -1), display })
+    const display = token.startsWith('$$') || token.startsWith('\\[')
+    let content = token
+    if (token.startsWith('$$') || token.startsWith('\\[')) content = token.slice(2, -2)
+    else content = token.slice(1, -1)
+    segs.push({ type: 'math', content, display })
     lastIndex = m.index + token.length
   }
   if (lastIndex < props.text.length) {

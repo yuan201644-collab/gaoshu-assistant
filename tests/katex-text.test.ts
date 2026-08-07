@@ -14,6 +14,11 @@ describe('KatexText', () => {
     expect(wrapper.findAll('.katex').length).toBeGreaterThan(0)
   })
 
+  it('含 \\[...\\] 块级公式（AI 常用格式）也渲染', () => {
+    const wrapper = mount(KatexText, { props: { text: '区间 \\[ (1, 2] \\] 结束' } })
+    expect(wrapper.findAll('.katex').length).toBeGreaterThan(0)
+  })
+
   it('无公式文本不渲染 .katex，保留原文', () => {
     const wrapper = mount(KatexText, { props: { text: '纯文本，没有公式' } })
     expect(wrapper.findAll('.katex').length).toBe(0)

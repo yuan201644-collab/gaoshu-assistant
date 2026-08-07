@@ -324,11 +324,13 @@ function feedbackClass(q: Question): string {
 }
 
 .type-tag {
-  font-size: 13px;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--color-primary);
   background: var(--color-primary-soft);
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.02em;
 }
 
 .question-text {
@@ -351,23 +353,31 @@ function feedbackClass(q: Question): string {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.6;
   -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.12s ease;
 }
 
 .option-item:active {
-  background: var(--color-primary-soft);
+  transform: scale(0.99);
+}
+
+@media (hover: hover) {
+  .option-item:not(:disabled):hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-primary-soft);
+  }
 }
 
 .option-item.is-correct {
   border-color: var(--color-success);
-  background: rgba(52, 168, 83, 0.08);
+  background: color-mix(in srgb, var(--color-success) 8%, var(--color-surface));
 }
 
 .option-item.is-wrong {
   border-color: var(--color-danger);
-  background: rgba(229, 72, 77, 0.08);
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
 }
 
 .option-item:disabled {
@@ -393,6 +403,7 @@ function feedbackClass(q: Question): string {
 .fill-input:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .answer-area {
@@ -417,12 +428,12 @@ function feedbackClass(q: Question): string {
 }
 
 .result-feedback.is-correct {
-  background: rgba(52, 168, 83, 0.1);
+  background: color-mix(in srgb, var(--color-success) 12%, var(--color-surface));
   color: var(--color-success);
 }
 
 .result-feedback.is-wrong {
-  background: rgba(229, 72, 77, 0.1);
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--color-surface));
   color: var(--color-danger);
 }
 

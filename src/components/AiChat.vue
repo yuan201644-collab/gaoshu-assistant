@@ -3,6 +3,7 @@ import { ref, watch, nextTick, onMounted } from 'vue'
 import { aiChatState, openWithContext, closeAiChat } from '@/services/aiChat'
 import { chatCompletion } from '@/services/ai'
 import type { ChatMessage } from '@/services/ai'
+import KatexText from '@/components/KatexText.vue'
 
 type UiMessage = ChatMessage & { error?: boolean }
 
@@ -78,7 +79,19 @@ defineExpose({ openWithContext })
 </script>
 
 <template>
-  <button class="ai-fab" aria-label="AI 讲解" @click="togglePanel">AI</button>
+  <button class="ai-fab" aria-label="AI 讲解" @click="togglePanel">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" />
+    </svg>
+  </button>
 
   <div v-if="aiChatState.isOpen" class="ai-panel">
     <div class="ai-header">
@@ -100,7 +113,9 @@ defineExpose({ openWithContext })
         "
       >
         <span class="ai-msg-label">{{ msg.role === 'user' ? '我' : 'AI' }}</span>
-        <div class="ai-msg-body">{{ msg.content }}</div>
+        <div class="ai-msg-body">
+          <KatexText :text="msg.content" />
+        </div>
       </div>
       <div v-if="sending" class="ai-msg ai-msg-assistant">
         <span class="ai-msg-label">AI</span>
@@ -133,15 +148,26 @@ defineExpose({ openWithContext })
   position: fixed;
   right: 16px;
   bottom: calc(env(safe-area-inset-bottom) + 76px);
-  z-index: 150;
-  width: 48px;
-  height: 48px;
+  z-index: var(--z-fab);
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-strong));
   color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(79, 110, 247, 0.35);
+  box-shadow: var(--shadow-float);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ai-fab:active {
+  transform: scale(0.94);
+}
+
+.ai-fab svg {
+  width: 24px;
+  height: 24px;
 }
 
 .ai-panel {
@@ -150,11 +176,24 @@ defineExpose({ openWithContext })
   top: 0;
   bottom: 0;
   width: min(420px, 100vw);
-  z-index: 200;
+  z-index: var(--z-panel);
   display: flex;
   flex-direction: column;
   background: var(--color-bg);
-  box-shadow: -8px 0 24px rgba(31, 36, 48, 0.12);
+  border-left: 1px solid var(--color-border);
+  box-shadow: -12px 0 32px rgba(50, 68, 160, 0.18);
+  animation: ai-panel-in 0.22s ease;
+}
+
+@keyframes ai-panel-in {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
 }
 
 .ai-header {
@@ -211,17 +250,21 @@ defineExpose({ openWithContext })
 
 .ai-msg-body {
   background: var(--color-surface);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  border-radius: 4px var(--radius-md) var(--radius-md) var(--radius-md);
   padding: 10px 12px;
   font-size: 14px;
   line-height: 1.7;
   word-break: break-word;
   white-space: pre-wrap;
+  box-shadow: var(--shadow-card);
 }
 
 .ai-msg-user .ai-msg-body {
-  background: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-strong));
   color: #fff;
+  border: none;
+  border-radius: var(--radius-md) 4px var(--radius-md) var(--radius-md);
 }
 
 .ai-msg-error .ai-msg-body {
@@ -244,11 +287,18 @@ defineExpose({ openWithContext })
 
 .ai-chip {
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-primary-soft);
   color: var(--color-primary);
   font-size: 13px;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease;
+}
+
+@media (hover: hover) {
+  .ai-chip:hover {
+    background: color-mix(in srgb, var(--color-primary-soft) 80%, var(--color-primary));
+  }
 }
 
 .ai-input-row {
@@ -273,5 +323,6 @@ defineExpose({ openWithContext })
 .ai-input:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 </style>

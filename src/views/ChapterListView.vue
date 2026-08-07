@@ -114,11 +114,17 @@ function goPractice(chapterId: string, sectionId: string) {
   width: 100%;
   padding: 14px 16px;
   text-align: left;
+  transition: background 0.2s ease;
+}
+
+.chapter-head:active {
+  background: var(--color-primary-soft);
 }
 
 .chapter-title {
-  font-size: 15px;
+  font-size: var(--text-title);
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .chapter-caret {
@@ -143,10 +149,17 @@ function goPractice(chapterId: string, sectionId: string) {
   border-top: 1px solid var(--color-border);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s ease;
 }
 
 .section-item:active {
   background: var(--color-primary-soft);
+}
+
+@media (hover: hover) {
+  .section-item:hover {
+    background: var(--color-primary-soft);
+  }
 }
 
 .section-main {

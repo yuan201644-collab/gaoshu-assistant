@@ -22,6 +22,18 @@ const hideTab = computed(() => route.meta.hideTab === true)
         class="app-tab-item"
         :class="{ 'is-active': route.path === tab.path }"
       >
+        <svg
+          class="app-tab-icon"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path :d="tab.icon" />
+        </svg>
         <span class="app-tab-label">{{ tab.label }}</span>
       </router-link>
     </nav>
@@ -48,28 +60,55 @@ const hideTab = computed(() => route.meta.hideTab === true)
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 100;
+  z-index: var(--z-tab);
   display: flex;
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface) 90%, transparent);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
   border-top: 1px solid var(--color-border);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
 .app-tab-item {
   flex: 1;
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 10px 0 8px;
-  color: var(--color-text-muted);
+  gap: 3px;
+  padding: 8px 0 7px;
+  color: var(--color-text-subtle);
   text-decoration: none;
-  font-size: 13px;
+  font-size: 11px;
   -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s ease, transform 0.12s ease;
+}
+
+.app-tab-item:active {
+  transform: scale(0.94);
 }
 
 .app-tab-item.is-active {
   color: var(--color-primary);
   font-weight: 600;
+}
+
+.app-tab-item.is-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 22px;
+  height: 3px;
+  border-radius: 0 0 3px 3px;
+  background: var(--color-primary);
+}
+
+.app-tab-icon {
+  width: 22px;
+  height: 22px;
 }
 
 @media (min-width: 769px) {
@@ -96,8 +135,20 @@ const hideTab = computed(() => route.meta.hideTab === true)
 
   .app-tab-item {
     justify-content: flex-start;
+    flex-direction: row;
+    gap: 10px;
     padding: 16px 24px;
     font-size: 15px;
+  }
+
+  .app-tab-item.is-active::before {
+    top: 0;
+    left: 0;
+    right: auto;
+    transform: none;
+    width: 3px;
+    height: 100%;
+    border-radius: 0 3px 3px 0;
   }
 }
 </style>
