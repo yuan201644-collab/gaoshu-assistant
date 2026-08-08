@@ -69,7 +69,7 @@ function goPractice(chapterId: string, sectionId: string) {
 <template>
   <div class="page">
     <h1 class="page-title">章节列表</h1>
-    <p class="page-sub">高数 · 基础篇（开发中）</p>
+    <p class="page-sub">高数 · 基础篇（共 12 章，按课本目录）</p>
 
     <div v-for="chapter in chapters" :key="chapter.id" class="chapter">
       <button class="chapter-head" @click="toggleChapter(chapter.id)">
@@ -77,25 +77,36 @@ function goPractice(chapterId: string, sectionId: string) {
         <span class="chapter-caret" :class="{ 'is-open': openChapters.has(chapter.id) }">›</span>
       </button>
 
-      <ul v-if="openChapters.has(chapter.id)" class="section-list">
-        <li
-          v-for="section in chapter.sections"
-          :key="section.id"
-          class="section-item"
-          @click="goPractice(chapter.id, section.id)"
-        >
-          <div class="section-main">
-            <span class="section-title">{{ section.title }}</span>
-            <span class="section-stats">
-              共 {{ countOf(chapter.id, section.id) }} 题 · 已做 {{ progressOf(chapter.id, section.id).doneCount }} · 错 {{ progressOf(chapter.id, section.id).wrongCount }}
+      <div v-if="openChapters.has(chapter.id)" class="section-list">
+        <div v-for="section in chapter.sections" :key="section.id" class="section-group">
+          <div
+            class="section-item"
+            @click="goPractice(chapter.id, section.id)"
+          >
+            <div class="section-main">
+              <span class="section-title">{{ section.title }}</span>
+              <span class="section-stats">
+                共 {{ countOf(chapter.id, section.id) }} 题 · 已做 {{ progressOf(chapter.id, section.id).doneCount }} · 错 {{ progressOf(chapter.id, section.id).wrongCount }}
+              </span>
+            </div>
+            <span class="section-state">
+              <span class="dot" :style="{ background: stateColor(chapter.id, section.id) }"></span>
+              {{ stateLabel(chapter.id, section.id) }}
             </span>
           </div>
-          <span class="section-state">
-            <span class="dot" :style="{ background: stateColor(chapter.id, section.id) }"></span>
-            {{ stateLabel(chapter.id, section.id) }}
-          </span>
-        </li>
-      </ul>
+
+          <div v-if="section.children?.length" class="section-children">
+            <div v-for="child in section.children" :key="child.id" class="sub-node">
+              <div class="sub-node-title">{{ child.title }}</div>
+              <div v-if="child.children?.length" class="sub-node-children">
+                <span v-for="leaf in child.children" :key="leaf.id" class="leaf-node">
+                  {{ leaf.title }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -142,13 +153,16 @@ function goPractice(chapterId: string, sectionId: string) {
   list-style: none;
 }
 
+.section-group {
+  border-top: 1px solid var(--color-border);
+}
+
 .section-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border-top: 1px solid var(--color-border);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: background 0.2s ease;
@@ -186,5 +200,36 @@ function goPractice(chapterId: string, sectionId: string) {
   font-size: 13px;
   color: var(--color-text-subtle);
   white-space: nowrap;
+}
+
+/* 节内子层级：考试内容概要 / 常考题型 → 知识点 */
+.section-children {
+  padding: 0 16px 10px;
+}
+
+.sub-node {
+  margin-top: 6px;
+}
+
+.sub-node-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.sub-node-children {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+.leaf-node {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  line-height: 1.4;
 }
 </style>

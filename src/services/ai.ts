@@ -8,6 +8,8 @@ export interface AiConfig {
   temperature: number
   /** 单次回答的最大 token 数（限制超长输出，默认 2000） */
   maxTokens?: number
+  /** 思考深度：deep 深度推理（deepseek-v4-flash，慢但质量高）/ light 轻度（deepseek-chat，快） */
+  thinking?: 'deep' | 'light'
 }
 
 export interface ChatMessage {
@@ -18,7 +20,15 @@ export interface ChatMessage {
 export const AI_CONFIG_KEY = 'gaoshu:ai-config'
 
 export function defaultAiConfig(): AiConfig {
-  return { baseURL: 'https://api.openai.com/v1', model: 'gpt-4o-mini', apiKey: '', temperature: 0.3, maxTokens: 8000, ...localAiConfig }
+  return {
+    baseURL: 'https://api.openai.com/v1',
+    model: 'gpt-4o-mini',
+    apiKey: '',
+    temperature: 0.3,
+    maxTokens: 8000,
+    thinking: 'deep',
+    ...localAiConfig,
+  }
 }
 
 /** 读 localStorage；无存储/JSON 损坏 → 默认；部分字段 → 与默认 merge 补齐 */
@@ -92,13 +102,20 @@ export async function chatCompletion(
   return content
 }
 
+/** 流式增量：content 为正式回答，reasoning 为推理模型的思考过程 */
+export interface StreamChunk {
+  content: string
+  reasoning: string
+}
+
 /**
  * 流式 chat/completions：边生成边通过 onDelta 回调增量内容。
- * 长回答（AI 讲解）用流式，首字更快可见，不用等全部生成完。
+ * 推理模型（v4-flash）思考阶段只有 reasoning，正式回答（content）在推理完成后才出现——
+ * 调用方应同时展示 reasoning，避免干等。
  */
 export async function streamChatCompletion(
   messages: ChatMessage[],
-  onDelta: (delta: string) => void,
+  onDelta: (chunk: StreamChunk) => void,
   cfg: AiConfig = loadAiConfig(),
 ): Promise<string> {
   if (!cfg.apiKey) throw new Error('请先在设置页配置 API')
@@ -153,12 +170,16 @@ export async function streamChatCompletion(
       if (data === '[DONE]') continue
       try {
         const json = JSON.parse(data) as {
-          choices?: Array<{ delta?: { content?: string } }>
+          choices?: Array<{ delta?: { content?: string; reasoning_content?: string } }>
         }
-        const delta = json.choices?.[0]?.delta?.content ?? ''
-        if (delta) {
-          full += delta
-          onDelta(delta)
+        const d = json.choices?.[0]?.delta ?? {}
+        const content = d.content ?? ''
+        const reasoning = d.reasoning_content ?? ''
+        if (content) {
+          full += content
+          onDelta({ content, reasoning: '' })
+        } else if (reasoning) {
+          onDelta({ content: '', reasoning })
         }
       } catch {
         /* 忽略无法解析的 SSE 行 */

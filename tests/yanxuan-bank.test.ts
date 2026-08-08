@@ -14,14 +14,14 @@ describe('yanxuanBank 严选题库（题图模式）', () => {
     expect(types).toEqual(new Set(['choice', 'fill', 'answer']))
   })
 
-  it('题目归属的节全部存在于 chapters.ts 且覆盖 8 个知识点节', () => {
+  it('题目归属的节全部存在于 chapters.ts 且覆盖第一章全部节', () => {
     const c1 = chapters.find((c) => c.id === 'c1')
     const allTitles = new Set(c1!.sections.map((s) => s.title))
     const covered = new Set(yanxuanChapter1.map((q) => q.section))
     for (const s of covered) {
-      expect(allTitles.has(s), `知识点 "${s}" 不在章节结构中`).toBe(true)
+      expect(allTitles.has(s), `节 "${s}" 不在章节结构中`).toBe(true)
     }
-    expect(covered.size).toBe(8)
+    expect(covered).toEqual(new Set(['第一节 函数', '第二节 极限', '第三节 函数的连续性']))
   })
 
   it('每题均有合法的单题图路径且与 id 对应', () => {

@@ -14,20 +14,22 @@ vi.mock('@/services/ai', () => ({
     temperature: 0.3,
     maxTokens: 2000,
   })),
+  saveAiConfig: vi.fn(),
 }))
 
 import AiChat from '@/components/AiChat.vue'
-import { chatCompletion, streamChatCompletion } from '@/services/ai'
+import { chatCompletion, streamChatCompletion, saveAiConfig } from '@/services/ai'
 import { openWithContext, aiChatState } from '@/services/aiChat'
 import type { ChatMessage } from '@/services/ai'
 
 const chatMock = vi.mocked(chatCompletion)
 const streamMock = vi.mocked(streamChatCompletion)
+const saveMock = vi.mocked(saveAiConfig)
 
 /** 流式 mock：调用 onDelta 后返回 */
 function streamResolve(text: string) {
   streamMock.mockImplementation(async (_m, onDelta) => {
-    onDelta(text)
+    onDelta({ content: text, reasoning: '' })
     return text
   })
 }
@@ -162,7 +164,7 @@ describe('AiChat — 上下文注入 openWithContext', () => {
 
 describe('AiChat — 加载态与错误', () => {
   it('发送后显示思考点，流式首个增量后消失并渲染回复', async () => {
-    let deltaFn!: (d: string) => void
+    let deltaFn!: (d: { content: string; reasoning: string }) => void
     streamMock.mockImplementation((_m, onDelta) => {
       deltaFn = onDelta
       return new Promise<string>(() => {}) // 不 resolve，模拟流式进行中
@@ -177,11 +179,37 @@ describe('AiChat — 加载态与错误', () => {
     expect(wrapper.find('.ai-thinking').exists()).toBe(true)
     expect(wrapper.find('.ai-send').attributes('disabled')).toBeDefined()
 
-    deltaFn('回复完毕')
+    deltaFn({ content: '回复完毕', reasoning: '' })
     await nextTick()
 
     expect(wrapper.find('.ai-thinking').exists()).toBe(false)
     expect(wrapper.find('.ai-msg-assistant').text()).toContain('回复完毕')
+  })
+
+  it('推理阶段显示思考点与「正在推理中」，content 出现后渲染回答', async () => {
+    let deltaFn!: (d: { content: string; reasoning: string }) => void
+    streamMock.mockImplementation((_m, onDelta) => {
+      deltaFn = onDelta
+      return new Promise<string>(() => {})
+    })
+    const wrapper = mountAiChat()
+    await openPanel(wrapper)
+
+    await wrapper.find('.ai-input').setValue('推理问题')
+    await wrapper.find('.ai-send').trigger('click')
+    await nextTick()
+
+    // reasoning 到达但 content 仍空：思考点 + 「正在推理中」持续，不显示英文思考
+    deltaFn({ content: '', reasoning: 'some english reasoning' })
+    await nextTick()
+    expect(wrapper.find('.ai-thinking').exists()).toBe(true)
+    expect(wrapper.find('.ai-thinking').text()).toContain('正在推理中')
+    expect(wrapper.find('.ai-reasoning').exists()).toBe(false)
+
+    deltaFn({ content: '答案如下', reasoning: '' })
+    await nextTick()
+    expect(wrapper.find('.ai-thinking').exists()).toBe(false)
+    expect(wrapper.find('.ai-msg-assistant').text()).toContain('答案如下')
   })
 
   it('chatCompletion reject → 展示错误文本', async () => {
@@ -194,5 +222,32 @@ describe('AiChat — 加载态与错误', () => {
     await flushPromises()
 
     expect(wrapper.find('.ai-msg-error').text()).toContain('AI 请求失败（HTTP 429）')
+  })
+})
+
+describe('AiChat — 对话界面思考深度切换', () => {
+  it('点「快速」→ saveAiConfig 收到 thinking=light 且 model=deepseek-chat', async () => {
+    const wrapper = mountAiChat()
+    await openPanel(wrapper)
+
+    const btns = wrapper.findAll('.ai-thinking-switch button')
+    expect(btns).toHaveLength(2)
+    await btns[1].trigger('click') // 快速
+
+    expect(saveMock).toHaveBeenCalledWith(
+      expect.objectContaining({ thinking: 'light', model: 'deepseek-chat' }),
+    )
+  })
+
+  it('点「深度」→ saveAiConfig 收到 thinking=deep 且 model=deepseek-v4-flash', async () => {
+    const wrapper = mountAiChat()
+    await openPanel(wrapper)
+
+    await wrapper.findAll('.ai-thinking-switch button')[1].trigger('click') // 先切快速
+    await wrapper.findAll('.ai-thinking-switch button')[0].trigger('click') // 再切深度
+
+    expect(saveMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ thinking: 'deep', model: 'deepseek-v4-flash' }),
+    )
   })
 })

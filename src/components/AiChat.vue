@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted } from 'vue'
 import { aiChatState, openWithContext, closeAiChat } from '@/services/aiChat'
-import { streamChatCompletion, SYSTEM_EXPLAIN_PROMPT } from '@/services/ai'
+import {
+  streamChatCompletion,
+  SYSTEM_EXPLAIN_PROMPT,
+  loadAiConfig,
+  saveAiConfig,
+} from '@/services/ai'
 import type { ChatMessage } from '@/services/ai'
 import MarkdownKatex from '@/components/MarkdownKatex.vue'
 
-type UiMessage = ChatMessage & { error?: boolean }
+type UiMessage = ChatMessage & { error?: boolean; reasoning?: string }
 
 const QUICK_CHIPS = ['讲解这道题', '分析易错点', '出变式题', '通俗解释概念']
 
@@ -53,6 +58,17 @@ function send() {
   sendText(text)
 }
 
+/** 对话界面直接切换思考深度：联动模型并持久化到配置 */
+const thinkingMode = ref<'deep' | 'light'>(loadAiConfig().thinking ?? 'deep')
+function switchThinking(mode: 'deep' | 'light') {
+  if (thinkingMode.value === mode) return
+  thinkingMode.value = mode
+  const cfg = loadAiConfig()
+  cfg.thinking = mode
+  cfg.model = mode === 'deep' ? 'deepseek-v4-flash' : 'deepseek-chat'
+  saveAiConfig(cfg)
+}
+
 async function sendText(text: string) {
   messages.value.push({ role: 'user', content: text })
   messages.value.push({ role: 'assistant', content: '' })
@@ -65,13 +81,13 @@ async function sendText(text: string) {
       .map(({ role, content }) => ({ role, content }))
     // 讲解要求放 system 消息，不进入对话气泡；user 只含题目上下文
     const payload: ChatMessage[] = [{ role: 'system', content: SYSTEM_EXPLAIN_PROMPT }, ...history]
-    await streamChatCompletion(payload, (delta) => {
+    await streamChatCompletion(payload, (chunk) => {
       // 必须通过 messages.value 访问 proxy 元素更新，直接改局部对象不触发响应式
       const last = messages.value[messages.value.length - 1]
-      if (last && last.role === 'assistant') {
-        last.content += delta
-        scrollToBottom()
-      }
+      if (!last || last.role !== 'assistant') return
+      // 推理阶段不显示思考过程（英文无意义），只等正式回答 content
+      if (chunk.content) last.content += chunk.content
+      scrollToBottom()
     })
   } catch (e) {
     const last = messages.value[messages.value.length - 1]
@@ -124,8 +140,12 @@ defineExpose({ openWithContext })
       >
         <span class="ai-msg-label">{{ msg.role === 'user' ? '我' : 'AI' }}</span>
         <div class="ai-msg-body">
-          <span v-if="msg.role === 'assistant' && !msg.content && sending" class="ai-thinking">
+          <span
+            v-if="msg.role === 'assistant' && !msg.content && sending"
+            class="ai-thinking"
+          >
             <span class="ai-dot"></span><span class="ai-dot"></span><span class="ai-dot"></span>
+            <span class="ai-thinking-text">正在推理中…</span>
           </span>
           <MarkdownKatex v-else :text="msg.content" />
         </div>
@@ -136,6 +156,26 @@ defineExpose({ openWithContext })
       <button v-for="chip in QUICK_CHIPS" :key="chip" class="ai-chip" @click="sendText(chip)">
         {{ chip }}
       </button>
+    </div>
+
+    <div class="ai-mode-row">
+      <span class="ai-mode-label">思考：{{ thinkingMode === 'deep' ? '深度' : '快速' }}</span>
+      <div class="ai-thinking-switch" role="group" aria-label="思考深度">
+        <button
+          type="button"
+          :class="{ 'is-active': thinkingMode === 'deep' }"
+          @click="switchThinking('deep')"
+        >
+          深度
+        </button>
+        <button
+          type="button"
+          :class="{ 'is-active': thinkingMode === 'light' }"
+          @click="switchThinking('light')"
+        >
+          快速
+        </button>
+      </div>
     </div>
 
     <div class="ai-input-row">
@@ -223,6 +263,42 @@ defineExpose({ openWithContext })
   padding: 4px 10px;
 }
 
+.ai-mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.ai-mode-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.ai-thinking-switch {
+  display: flex;
+  gap: 4px;
+}
+
+.ai-thinking-switch button {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  transition: all 0.2s ease;
+}
+
+.ai-thinking-switch button.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
 .ai-messages {
   flex: 1;
   overflow-y: auto;
@@ -285,6 +361,12 @@ defineExpose({ openWithContext })
   gap: 4px;
   align-items: center;
   padding: 4px 0;
+}
+
+.ai-thinking-text {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-left: 2px;
 }
 
 .ai-dot {

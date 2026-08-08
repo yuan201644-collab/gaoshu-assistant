@@ -43,6 +43,36 @@ describe('SettingsView — 表单回显', () => {
   })
 })
 
+describe('SettingsView — 思考深度切换', () => {
+  it('点轻度思考 → model 联动为 deepseek-chat，保存后 thinking=light', async () => {
+    const wrapper = mount(SettingsView)
+    await flushPromises()
+
+    const buttons = wrapper.findAll('.thinking-btn')
+    expect(buttons).toHaveLength(2)
+    await buttons[1].trigger('click') // 轻度思考
+
+    expect((wrapper.find('#ai-model').element as HTMLInputElement).value).toBe('deepseek-chat')
+
+    await wrapper.find('#ai-api-key').setValue('sk-secret')
+    await wrapper.find('.btn-save').trigger('click')
+    await flushPromises()
+
+    const saved = loadAiConfig()
+    expect(saved.thinking).toBe('light')
+    expect(saved.model).toBe('deepseek-chat')
+  })
+
+  it('点深度思考 → model 联动为 deepseek-v4-flash', async () => {
+    const wrapper = mount(SettingsView)
+    await flushPromises()
+
+    await wrapper.findAll('.thinking-btn')[1].trigger('click') // 先轻度
+    await wrapper.findAll('.thinking-btn')[0].trigger('click') // 再深度
+    expect((wrapper.find('#ai-model').element as HTMLInputElement).value).toBe('deepseek-v4-flash')
+  })
+})
+
 describe('SettingsView — 保存配置', () => {
   it('填表保存 → localStorage 回读一致 + 显示「已保存」', async () => {
     const wrapper = mount(SettingsView)

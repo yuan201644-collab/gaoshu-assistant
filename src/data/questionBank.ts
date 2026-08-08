@@ -8,7 +8,7 @@ export const questionBank: Question[] = [
   {
     id: 'c1-s1-001',
     chapter: '第一章 函数、极限、连续',
-    section: '1.1 函数',
+    section: '第一节 函数',
     tags: ['函数概念', '定义域'],
     type: 'choice',
     difficulty: 1,
@@ -21,7 +21,7 @@ export const questionBank: Question[] = [
   {
     id: 'c1-s1-002',
     chapter: '第一章 函数、极限、连续',
-    section: '1.1 函数',
+    section: '第一节 函数',
     tags: ['复合函数'],
     type: 'fill',
     difficulty: 1,
@@ -33,7 +33,7 @@ export const questionBank: Question[] = [
   {
     id: 'c1-s1-003',
     chapter: '第一章 函数、极限、连续',
-    section: '1.1 函数',
+    section: '第一节 函数',
     tags: ['函数的奇偶性'],
     type: 'answer',
     difficulty: 2,
@@ -46,7 +46,7 @@ export const questionBank: Question[] = [
   {
     id: 'c1-s2-001',
     chapter: '第一章 函数、极限、连续',
-    section: '1.2 极限的概念',
+    section: '第二节 极限',
     tags: ['重要极限', '极限计算'],
     type: 'choice',
     difficulty: 1,
@@ -59,7 +59,7 @@ export const questionBank: Question[] = [
   {
     id: 'c1-s2-002',
     chapter: '第一章 函数、极限、连续',
-    section: '1.2 极限的概念',
+    section: '第二节 极限',
     tags: ['等价无穷小'],
     type: 'fill',
     difficulty: 2,
@@ -71,7 +71,7 @@ export const questionBank: Question[] = [
   {
     id: 'c1-s2-003',
     chapter: '第一章 函数、极限、连续',
-    section: '1.2 极限的概念',
+    section: '第二节 极限',
     tags: ['重要极限', '极限计算'],
     type: 'choice',
     difficulty: 2,
@@ -85,7 +85,7 @@ export const questionBank: Question[] = [
   {
     id: 'c1-s2-004',
     chapter: '第一章 函数、极限、连续',
-    section: '1.2 极限的概念',
+    section: '第二节 极限',
     tags: ['极限计算', '有理化'],
     type: 'answer',
     difficulty: 2,

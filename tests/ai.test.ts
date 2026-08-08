@@ -47,6 +47,7 @@ const CFG = {
   apiKey: 'sk-test',
   temperature: 0.3,
   maxTokens: 8000,
+  thinking: 'deep',
 }
 
 describe('ai.ts — localStorage 配置读写', () => {
@@ -154,7 +155,11 @@ describe('ai.ts — streamChatCompletion 流式', () => {
       new Response(sse, { status: 200, headers: { 'Content-Type': 'text/event-stream' } }),
     )
     const deltas: string[] = []
-    const full = await streamChatCompletion([{ role: 'user', content: 'hi' }], (d) => deltas.push(d), CFG)
+    const full = await streamChatCompletion(
+      [{ role: 'user', content: 'hi' }],
+      (d) => deltas.push(d.content),
+      CFG,
+    )
     expect(deltas).toEqual(['你好', '，世界'])
     expect(full).toBe('你好，世界')
   })

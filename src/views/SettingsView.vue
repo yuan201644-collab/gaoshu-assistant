@@ -11,6 +11,11 @@ onMounted(() => {
   Object.assign(form, loadAiConfig())
 })
 
+function setThinking(mode: 'deep' | 'light') {
+  form.thinking = mode
+  form.model = mode === 'deep' ? 'deepseek-v4-flash' : 'deepseek-chat'
+}
+
 function save() {
   if (!form.apiKey.trim()) {
     hint.value = '请填写 API Key'
@@ -88,6 +93,28 @@ async function testConnection() {
         />
       </div>
 
+      <div class="form-row">
+        <label class="form-label">思考深度</label>
+        <div class="thinking-toggle">
+          <button
+            type="button"
+            class="thinking-btn"
+            :class="{ 'is-active': form.thinking === 'deep' }"
+            @click="setThinking('deep')"
+          >
+            深度思考
+          </button>
+          <button
+            type="button"
+            class="thinking-btn"
+            :class="{ 'is-active': form.thinking === 'light' }"
+            @click="setThinking('light')"
+          >
+            轻度思考（快）
+          </button>
+        </div>
+      </div>
+
       <p v-if="hint" class="save-hint">{{ hint }}</p>
       <p v-if="status" class="save-status">{{ status }}</p>
 
@@ -130,6 +157,29 @@ async function testConnection() {
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.thinking-toggle {
+  display: flex;
+  gap: 10px;
+}
+
+.thinking-btn {
+  flex: 1;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.thinking-btn.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .save-hint {
